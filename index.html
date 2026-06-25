@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Health & Fitness Agent</title>
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.4.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #ffffff;
+    --bg2:       #f8fafc;
+    --bg3:       #f1f5f9;
+    --border:    #e2e8f0;
+    --border2:   #cbd5e1;
+    --text:      #0f172a;
+    --text2:     #475569;
+    --text3:     #94a3b8;
+    --accent:    #0f172a;
+    --radius:    12px;
+    --radius-sm: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #0f172a;
+      --bg2:     #1e293b;
+      --bg3:     #334155;
+      --border:  #334155;
+      --border2: #475569;
+      --text:    #f8fafc;
+      --text2:   #94a3b8;
+      --text3:   #64748b;
+      --accent:  #f8fafc;
+    }
+  }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 280px; flex-shrink: 0;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1.25rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+
+  .sidebar h2 { font-size: 1rem; font-weight: 600; margin-bottom: .25rem; }
+
+  .main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+
+  .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: .25rem; }
+  .page-sub   { font-size: .875rem; color: var(--text2); margin-bottom: 1.25rem; }
+
+  /* ── Form controls ── */
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: .75rem; color: var(--text2); font-weight: 500; }
+  .form-group input, .form-group select {
+    padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    background: var(--bg2); color: var(--text); font-size: .875rem;
+    transition: border .15s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--accent);
+  }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: .5rem 0; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border);
+          border-radius: var(--radius); padding: 4px; margin-bottom: 1.25rem; }
+  .tab-btn {
+    flex: 1; padding: 9px 6px; font-size: .8rem; font-weight: 500;
+    border: none; background: transparent; color: var(--text2);
+    cursor: pointer; border-radius: var(--radius-sm); transition: all .15s;
+  }
+  .tab-btn.active {
+    background: var(--bg3); color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); background: var(--bg2); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .card-title { font-size: .9375rem; font-weight: 600; margin-bottom: .75rem; }
+
+  /* ── Metrics grid ── */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem; }
+  .metric-card {
+    background: var(--bg2); border-radius: var(--radius); padding: 1rem;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .metric-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
+                  color: var(--text3); margin-bottom: 4px; }
+  .metric-value { font-size: 1.4rem; font-weight: 700; }
+  .metric-sub   { font-size: .7rem; color: var(--text3); margin-top: 2px; }
+
+  /* ── BMI bar ── */
+  .bmi-wrap { position: relative; height: 14px; border-radius: 7px;
+              background: linear-gradient(90deg,#60a5fa 0%,#4ade80 26%,#fbbf24 60%,#f87171 100%);
+              margin: 10px 0 6px; }
+  .bmi-pin { position: absolute; top: -4px; width: 22px; height: 22px; border-radius: 50%;
+             background: var(--text); border: 3px solid var(--bg); transform: translateX(-50%);
+             box-shadow: 0 0 0 2px var(--text); transition: left .5s cubic-bezier(.4,0,.2,1); }
+  .bmi-labels { display: flex; justify-content: space-between; font-size: .7rem; color: var(--text3); }
+
+  /* ── Macros bar ── */
+  .macro-bar { height: 10px; border-radius: 5px; display: flex; overflow: hidden; margin: 8px 0; }
+  .macro-bar span { display: block; height: 100%; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: var(--radius-sm); font-size: .875rem;
+    font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text);
+  }
+  .btn:hover { background: var(--bg3); }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn.primary:hover { opacity: .85; }
+  .btn.danger  { border-color: #fca5a5; color: #ef4444; }
+  .btn.danger:hover { background: #fef2f2; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Output text area ── */
+  .output-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 1rem;
+    font-size: .875rem; line-height: 1.75; white-space: pre-wrap;
+    min-height: 80px; color: var(--text);
+  }
+  .output-box.muted { color: var(--text3); }
+
+  /* ── Chat ── */
+  .chat-history {
+    max-height: 360px; overflow-y: auto; display: flex;
+    flex-direction: column; gap: 10px; padding: 4px 2px; margin-bottom: 10px;
+  }
+  .msg { padding: 9px 14px; border-radius: 16px; font-size: .875rem;
+         line-height: 1.6; max-width: 85%; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: var(--bg);
+              border-radius: 16px 16px 4px 16px; }
+  .msg.bot  { align-self: flex-start; background: var(--bg2); color: var(--text);
+              border-radius: 16px 16px 16px 4px; border: 1px solid var(--border); }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input-row input {
+    flex: 1; padding: 9px 12px; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); background: var(--bg2); color: var(--text);
+    font-size: .875rem;
+  }
+  .chat-input-row input:focus { outline: none; border-color: var(--accent); }
+
+  /* ── Quick prompts ── */
+  .quick-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .quick-btn {
+    font-size: .75rem; padding: 5px 11px; border-radius: 20px;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text2); cursor: pointer; transition: all .15s;
+  }
+  .quick-btn:hover { background: var(--bg2); color: var(--text); }
+
+  /* ── Spinner ── */
+  .spinner { display: inline-block; width: 14px; height: 14px;
+             border: 2px solid currentColor; border-top-color: transparent;
+             border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Info banner ── */
+  .info-banner {
+    background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+    border-radius: var(--radius-sm); padding: .75rem 1rem; font-size: .85rem;
+    margin-top: .75rem;
+  }
+
+  /* ── API key prompt ── */
+  .api-key-card {
+    max-width: 480px; margin: 3rem auto; background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem;
+    text-align: center;
+  }
+  .api-key-card h2 { margin-bottom: .5rem; }
+  .api-key-card p  { color: var(--text2); font-size: .875rem; margin-bottom: 1.25rem; }
+  .api-key-card input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); background: var(--bg2); color: var(--text);
+    font-size: .875rem; margin-bottom: .75rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .shell { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── API key gate ─────────────────────────────────────────────────────────── -->
+<div id="api-gate" style="display:none; position:fixed; inset:0; background:var(--bg3);
+     z-index:100; display:flex; align-items:center; justify-content:center;">
+  <div class="api-key-card">
+    <h2>🔑 Enter your Google AI API key</h2>
+    <p>Your key is stored only in this browser tab and never sent anywhere except
+       directly to the Google Generative Language API.</p>
+    <input type="password" id="api-key-input" placeholder="AIza…"
+           onkeydown="if(event.key==='Enter')saveKey()">
+    <button class="btn primary" style="width:100%" onclick="saveKey()">
+      Start the app
+    </button>
+    <p style="margin-top:.75rem; font-size:.75rem">
+      Get a key at
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#2563eb">
+        aistudio.google.com</a>
+    </p>
+  </div>
+</div>
+
+<!-- ── Main shell ───────────────────────────────────────────────────────────── -->
+<div class="shell" id="main-shell" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <h2><i class="ti ti-user-circle"></i> Your Profile</h2>
+    </div>
+
+    <div class="form-group">
+      <label>Age</label>
+      <input type="number" id="age" value="25" min="10" max="100" oninput="updateMetrics()">
+    </div>
+    <div class="form-group">
+      <label>Gender</label>
+      <select id="gender" onchange="updateMetrics()">
+        <option>Male</option><option>Female</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Height (cm)</label>
+      <input type="number" id="height" value="170" min="100" max="250" oninput="updateMetrics()">
+    </div>
+    <div class="form-group">
+      <label>Weight (kg)</label>
+      <input type="number" id="weight" value="70" min="20" max="300" oninput="updateMetrics()">
+    </div>
+    <div class="form-group">
+      <label>Activity level</label>
+      <select id="activity" onchange="updateMetrics()">
+        <option>Sedentary</option>
+        <option>Lightly Active</option>
+        <option selected>Moderately Active</option>
+        <option>Very Active</option>
+        <option>Extremely Active</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Goal</label>
+      <select id="goal" onchange="updateMetrics()">
+        <option>Weight Loss</option>
+        <option>Maintenance</option>
+        <option>Muscle Gain</option>
+      </select>
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-group">
+      <label>Dietary preference</label>
+      <select id="diet-pref">
+        <option>No restriction</option>
+        <option>Vegetarian</option>
+        <option>Vegan</option>
+        <option>Keto</option>
+        <option>High protein</option>
+        <option>Mediterranean</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Workout equipment</label>
+      <select id="equipment">
+        <option>Full gym</option>
+        <option>Home (dumbbells)</option>
+        <option>Bodyweight only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Training days / week</label>
+      <select id="days-pw">
+        <option>3 days</option>
+        <option>4 days</option>
+        <option selected>5 days</option>
+        <option>6 days</option>
+      </select>
+    </div>
+
+    <hr class="divider">
+    <button class="btn danger" onclick="clearKey()" style="width:100%">
+      <i class="ti ti-logout"></i> Clear API key
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <p class="page-title">💪 AI Health & Fitness Agent</p>
+    <p class="page-sub">Personalised metrics, meal plans, workouts & coach chat — powered by Gemini.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('metrics', this)">
+        <i class="ti ti-chart-bar"></i> Metrics
+      </button>
+      <button class="tab-btn" onclick="switchTab('meal', this)">
+        <i class="ti ti-salad"></i> Meal Plan
+      </button>
+      <button class="tab-btn" onclick="switchTab('workout', this)">
+        <i class="ti ti-barbell"></i> Workout
+      </button>
+      <button class="tab-btn" onclick="switchTab('chat', this)">
+        <i class="ti ti-messages"></i> Coach Chat
+      </button>
+    </div>
+
+    <!-- ── METRICS ── -->
+    <div id="tab-metrics" class="tab-panel active">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">BMI</div>
+          <div class="metric-value" id="m-bmi">—</div>
+          <div class="metric-sub" id="m-cat">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">BMR</div>
+          <div class="metric-value" id="m-bmr">—</div>
+          <div class="metric-sub">kcal / day</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">TDEE</div>
+          <div class="metric-value" id="m-tdee">—</div>
+          <div class="metric-sub">kcal / day</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Calorie target</div>
+          <div class="metric-value" id="m-target">—</div>
+          <div class="metric-sub" id="m-goal-lbl">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">BMI Scale</div>
+        <div class="bmi-wrap"><div class="bmi-pin" id="bmi-pin" style="left:50%"></div></div>
+        <div class="bmi-labels">
+          <span>Underweight &lt;18.5</span>
+          <span>Normal 18.5–24.9</span>
+          <span>Overweight 25–29.9</span>
+          <span>Obese ≥30</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daily Macronutrient Targets</div>
+        <div class="macro-bar" id="macro-bar"></div>
+        <div style="display:flex;gap:1rem;font-size:.8rem;color:var(--text2);margin-bottom:.75rem">
+          <span><span style="color:#60a5fa">■</span> Protein</span>
+          <span><span style="color:#fbbf24">■</span> Carbs</span>
+          <span><span style="color:#f87171">■</span> Fat</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+          <div>
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:3px">PROTEIN</div>
+            <div style="font-size:1.2rem;font-weight:700" id="m-protein">—</div>
+            <div style="font-size:.7rem;color:var(--text3)">grams</div>
+          </div>
+          <div>
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:3px">CARBS</div>
+            <div style="font-size:1.2rem;font-weight:700" id="m-carbs">—</div>
+            <div style="font-size:.7rem;color:var(--text3)">grams</div>
+          </div>
+          <div>
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:3px">FAT</div>
+            <div style="font-size:1.2rem;font-weight:700" id="m-fat">—</div>
+            <div style="font-size:.7rem;color:var(--text3)">grams</div>
+          </div>
+        </div>
+        <div class="info-banner" id="ideal-weight-banner"></div>
+      </div>
+    </div>
+
+    <!-- ── MEAL PLAN ── -->
+    <div id="tab-meal" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Generate your meal plan</div>
+        <p style="font-size:.875rem;color:var(--text2);margin-bottom:1rem">
+          An AI-crafted daily meal plan based on your calorie target and dietary preference.
+        </p>
+        <button class="btn primary" id="meal-btn" onclick="generateMeal()">
+          <i class="ti ti-sparkles"></i> Generate meal plan
+        </button>
+      </div>
+      <div class="card" id="meal-result" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div class="card-title" style="margin:0">Your meal plan</div>
+          <button class="btn" onclick="downloadTxt('meal-output', 'meal_plan.txt')">
+            <i class="ti ti-download"></i> Download
+          </button>
+        </div>
+        <div class="output-box" id="meal-output"></div>
+      </div>
+    </div>
+
+    <!-- ── WORKOUT ── -->
+    <div id="tab-workout" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Generate your workout plan</div>
+        <p style="font-size:.875rem;color:var(--text2);margin-bottom:1rem">
+          A weekly training program tailored to your goal, equipment, and schedule.
+        </p>
+        <button class="btn primary" id="workout-btn" onclick="generateWorkout()">
+          <i class="ti ti-sparkles"></i> Generate workout plan
+        </button>
+      </div>
+      <div class="card" id="workout-result" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div class="card-title" style="margin:0">Your workout plan</div>
+          <button class="btn" onclick="downloadTxt('workout-output', 'workout_plan.txt')">
+            <i class="ti ti-download"></i> Download
+          </button>
+        </div>
+        <div class="output-box" id="workout-output"></div>
+      </div>
+    </div>
+
+    <!-- ── CHAT ── -->
+    <div id="tab-chat" class="tab-panel">
+      <div class="card">
+        <div class="quick-wrap" id="quick-wrap"></div>
+        <hr class="divider" style="margin-bottom:10px">
+        <div class="chat-history" id="chat-history"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Ask your fitness coach…"
+                 onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn primary" onclick="sendChat()">
+            <i class="ti ti-send"></i>
+          </button>
+          <button class="btn danger" onclick="clearChat()" title="Clear chat">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div><!-- /.shell -->
+
+<script>
+/* ── Constants ─────────────────────────────────────────────────────────────── */
+const ACTIVITY_FACTORS = {
+  'Sedentary': 1.2, 'Lightly Active': 1.375, 'Moderately Active': 1.55,
+  'Very Active': 1.725, 'Extremely Active': 1.9
+};
+const QUICK_PROMPTS = [
+  'What foods support muscle recovery?',
+  'How much water should I drink daily?',
+  'Should I do cardio before or after lifting?',
+  'Best exercises to burn fat at home?',
+  'How many rest days per week do I need?',
+  'How can I improve sleep for better gains?',
+];
+
+/* Gemini model used for all calls (text generation) */
+const GEMINI_MODEL = 'gemini-2.5-flash';
+
+let chatHistory  = [];   // [{role: 'user'|'model', parts: [{text}]}]
+let GOOGLE_KEY   = '';
+
+/* ── API key management ─────────────────────────────────────────────────────── */
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k.startsWith('AIza')) { alert('Please enter a valid Google AI API key (starts with AIza).'); return; }
+  GOOGLE_KEY = k;
+  sessionStorage.setItem('_hfa_key', k);
+  document.getElementById('api-gate').style.display = 'none';
+  document.getElementById('main-shell').style.display = 'flex';
+  updateMetrics();
+}
+function clearKey() {
+  sessionStorage.removeItem('_hfa_key');
+  GOOGLE_KEY = '';
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('main-shell').style.display = 'none';
+  document.getElementById('api-gate').style.display = 'flex';
+}
+
+/* ── Health calculations ────────────────────────────────────────────────────── */
+function getProfile() {
+  const age    = +document.getElementById('age').value    || 25;
+  const gender = document.getElementById('gender').value;
+  const height = +document.getElementById('height').value || 170;
+  const weight = +document.getElementById('weight').value || 70;
+  const activity = document.getElementById('activity').value;
+  const goal     = document.getElementById('goal').value;
+
+  const bmi  = +(weight / ((height / 100) ** 2)).toFixed(1);
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  const bmr  = Math.round(gender === 'Male' ? base + 5 : base - 161);
+  const tdee = Math.round(bmr * ACTIVITY_FACTORS[activity]);
+  const adj  = goal === 'Weight Loss' ? -500 : goal === 'Muscle Gain' ? 300 : 0;
+  const target = tdee + adj;
+
+  const catMap = [
+    [18.5, 'Underweight'],
+    [25,   'Normal Weight'],
+    [30,   'Overweight'],
+    [Infinity, 'Obese'],
+  ];
+  const cat = catMap.find(([t]) => bmi < t)[1];
+
+  const pp = goal === 'Muscle Gain' ? [.35, .45, .20] : [.30, .40, .30];
+  const protein = Math.round(target * pp[0] / 4);
+  const carbs   = Math.round(target * pp[1] / 4);
+  const fat     = Math.round(target * pp[2] / 9);
+
+  const h = height / 100;
+  const wtMin = +(18.5 * h * h).toFixed(1);
+  const wtMax = +(24.9 * h * h).toFixed(1);
+
+  return { age, gender, height, weight, activity, goal, bmi, cat, bmr, tdee, target, protein, carbs, fat, wtMin, wtMax };
+}
+
+function updateMetrics() {
+  const p = getProfile();
+  document.getElementById('m-bmi').textContent    = p.bmi;
+  document.getElementById('m-cat').textContent    = p.cat;
+  document.getElementById('m-bmr').textContent    = p.bmr.toLocaleString();
+  document.getElementById('m-tdee').textContent   = p.tdee.toLocaleString();
+  document.getElementById('m-target').textContent = p.target.toLocaleString();
+  document.getElementById('m-goal-lbl').textContent = p.goal.toLowerCase();
+  document.getElementById('m-protein').textContent  = p.protein;
+  document.getElementById('m-carbs').textContent    = p.carbs;
+  document.getElementById('m-fat').textContent      = p.fat;
+
+  const pct = Math.min(Math.max((p.bmi - 10) / 30 * 100, 2), 97);
+  document.getElementById('bmi-pin').style.left = pct + '%';
+
+  const total = p.protein * 4 + p.carbs * 4 + p.fat * 9;
+  const pP = Math.round(p.protein * 4 / total * 100);
+  const pC = Math.round(p.carbs   * 4 / total * 100);
+  const pF = 100 - pP - pC;
+  document.getElementById('macro-bar').innerHTML =
+    `<span style="width:${pP}%;background:#60a5fa"></span>
+     <span style="width:${pC}%;background:#fbbf24"></span>
+     <span style="width:${pF}%;background:#f87171"></span>`;
+
+  document.getElementById('ideal-weight-banner').textContent =
+    `🎯  Healthy weight range for ${p.height} cm: ${p.wtMin}–${p.wtMax} kg (BMI 18.5–24.9)`;
+}
+
+/* ── Tab switching ──────────────────────────────────────────────────────────── */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Gemini API call ────────────────────────────────────────────────────────── */
+/**
+ * Calls the Gemini generateContent REST endpoint.
+ * @param {Object} opts
+ * @param {string} [opts.system]   Optional system instruction text.
+ * @param {Array}  opts.contents   Array of {role: 'user'|'model', parts: [{text}]}.
+ * @param {number} [opts.max_tokens=1200]  Max output tokens.
+ * @returns {Promise<string>} The concatenated text of the response.
+ */
+async function callGemini({ system, contents, max_tokens = 1200 }) {
+  const body = {
+    contents,
+    generationConfig: { maxOutputTokens: max_tokens },
+  };
+  if (system) {
+    body.system_instruction = { parts: [{ text: system }] };
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': GOOGLE_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  const candidate = data.candidates && data.candidates[0];
+  if (!candidate) {
+    const reason = data.promptFeedback?.blockReason;
+    throw new Error(reason ? `Blocked: ${reason}` : 'No response from model.');
+  }
+  return (candidate.content?.parts || []).map(p => p.text || '').join('');
+}
+
+function profileText(p) {
+  return `Age: ${p.age}, Gender: ${p.gender}, Height: ${p.height} cm, Weight: ${p.weight} kg, `
+       + `BMI: ${p.bmi} (${p.cat}), Activity: ${p.activity}, Goal: ${p.goal}, `
+       + `Daily calorie target: ${p.target} kcal, `
+       + `Macros — Protein: ${p.protein} g, Carbs: ${p.carbs} g, Fat: ${p.fat} g`;
+}
+
+/* ── Meal plan ──────────────────────────────────────────────────────────────── */
+async function generateMeal() {
+  const p    = getProfile();
+  const pref = document.getElementById('diet-pref').value;
+  const btn  = document.getElementById('meal-btn');
+  const box  = document.getElementById('meal-output');
+  const res  = document.getElementById('meal-result');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  res.style.display = 'block';
+  box.className = 'output-box muted';
+  box.textContent = 'Creating your personalised meal plan…';
+
+  try {
+    const text = await callGemini({
+      contents: [{
+        role: 'user',
+        parts: [{
+          text:
+            `You are a registered dietitian. Create a detailed daily meal plan.\n`
+            + `User profile: ${profileText(p)}\n`
+            + `Dietary preference: ${pref}\n\n`
+            + `Structure: Breakfast · Morning snack · Lunch · Afternoon snack · Dinner.\n`
+            + `For each meal include: name, key ingredients, portion size, and calorie estimate.\n`
+            + `Keep the total close to ${p.target} kcal.\n`
+            + `End with a short macro summary (protein / carbs / fat in grams).\n`
+            + `Plain text only — no markdown.`
+        }],
+      }],
+    });
+    box.textContent = text;
+    box.className   = 'output-box';
+  } catch (e) {
+    box.textContent = `Error: ${e.message}`;
+    box.className   = 'output-box';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate meal plan';
+}
+
+/* ── Workout plan ───────────────────────────────────────────────────────────── */
+async function generateWorkout() {
+  const p     = getProfile();
+  const equip = document.getElementById('equipment').value;
+  const days  = document.getElementById('days-pw').value;
+  const btn   = document.getElementById('workout-btn');
+  const box   = document.getElementById('workout-output');
+  const res   = document.getElementById('workout-result');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  res.style.display = 'block';
+  box.className = 'output-box muted';
+  box.textContent = 'Building your workout program…';
+
+  try {
+    const text = await callGemini({
+      contents: [{
+        role: 'user',
+        parts: [{
+          text:
+            `You are a certified personal trainer. Create a weekly workout plan.\n`
+            + `User profile: ${profileText(p)}\n`
+            + `Equipment: ${equip}, Days per week: ${days}\n\n`
+            + `Include: warm-up routine, day-by-day sessions with exercises (sets × reps or duration), `
+            + `rest days, and a cooldown routine.\n`
+            + `Tailor intensity and selection to the user's goal (${p.goal}).\n`
+            + `Plain text only — no markdown.`
+        }],
+      }],
+    });
+    box.textContent = text;
+    box.className   = 'output-box';
+  } catch (e) {
+    box.textContent = `Error: ${e.message}`;
+    box.className   = 'output-box';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate workout plan';
+}
+
+/* ── Chat ───────────────────────────────────────────────────────────────────── */
+function buildQuickPrompts() {
+  const wrap = document.getElementById('quick-wrap');
+  QUICK_PROMPTS.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = q;
+    btn.onclick = () => { document.getElementById('chat-input').value = q; sendChat(); };
+    wrap.appendChild(btn);
+  });
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+
+  appendMsg(q, 'user');
+  const p = getProfile();
+  chatHistory.push({ role: 'user', parts: [{ text: `[Profile: ${profileText(p)}]\n${q}` }] });
+
+  const thinking = appendMsg('…', 'bot');
+  try {
+    const reply = await callGemini({
+      system:
+        'You are a knowledgeable, friendly health and fitness coach. '
+        + 'Give practical, evidence-based advice. Keep responses concise and actionable.',
+      contents: chatHistory,
+      max_tokens: 800,
+    });
+    thinking.textContent = reply;
+    chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+  } catch (e) {
+    thinking.textContent = `Error: ${e.message}`;
+  }
+}
+
+function appendMsg(text, role) {
+  const hist = document.getElementById('chat-history');
+  const div  = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  hist.appendChild(div);
+  hist.scrollTop = hist.scrollHeight;
+  return div;
+}
+
+function clearChat() {
+  chatHistory = [];
+  document.getElementById('chat-history').innerHTML = '';
+}
+
+/* ── Download helper ────────────────────────────────────────────────────────── */
+function downloadTxt(boxId, filename) {
+  const text = document.getElementById(boxId).textContent;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  a.download = filename;
+  a.click();
+}
+
+/* ── Init ───────────────────────────────────────────────────────────────────── */
+(function init() {
+  const stored = sessionStorage.getItem('_hfa_key');
+  if (stored) {
+    GOOGLE_KEY = stored;
+    document.getElementById('api-gate').style.display  = 'none';
+    document.getElementById('main-shell').style.display = 'flex';
+  } else {
+    document.getElementById('api-gate').style.display  = 'flex';
+    document.getElementById('main-shell').style.display = 'none';
+  }
+  buildQuickPrompts();
+  updateMetrics();
+})();
+</script>
+</body>
+</html>
