@@ -1,4 +1,4 @@
-# AI Health & Fitness Agent
+# AI Health & Fitness Planner Agent
 
 A personalized health and fitness assistant that calculates your core body metrics and uses Google's Gemini AI to generate custom meal plans, workout programs, and answer fitness questions in a live coach chat.
 
