@@ -263,7 +263,7 @@ These recommendations are automatically adjusted according to the selected fitne
 
 # 📂 Project Structure
 
-
+```
 health_fitness_agent/
 
 ├── app.py
@@ -273,7 +273,7 @@ health_fitness_agent/
 ├── .env
 ├── README.md
 └── screenshots/
-
+```
 ---
 
 # 🎯 Key Highlights
